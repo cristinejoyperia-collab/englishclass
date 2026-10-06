@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>FRUIT SPELL - Solo Game</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * {
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      box-sizing: border-box;
+      text-transform: lowercase !important;
+    }
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #09090b;
+      color: #fff;
+    }
+
+    /* Font Styles applied specifically to Game Screens */
+    .comic-sans-font,
+    .comic-sans-font * {
+      font-family: 'Comic Sans MS', 'Comic Sans', cursive, sans-serif !important;
+    }
+
+    /* Blade sheen effect */
+    @keyframes sheen {
+      0% { transform: translateX(-150%) skewX(-25deg); }
+      100% { transform: translateX(250%) skewX(-25deg); }
+    }
+    .blade-sheen::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 60%;
+      height: 100%;
+      background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0) 100%);
+      animation: sheen 2.8s infinite;
+      pointer-events: none;
+    }
+
+    /* Screen Shake on Bomb */
+    .shake {
+      animation: shake 0.45s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    @keyframes shake {
+      10%, 90% { transform: translate3d(-5px, 0, 0); }
+      20%, 80% { transform: translate3d(6px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-8px, 0, 0); }
+      40%, 60% { transform: translate3d(8px, 0, 0); }
+    }
+
+    /* Wooden tray texture */
+    .wooden-tray {
+      background: radial-gradient(circle, #b45309 0%, #78350f 100%);
+      border: 6px solid #451a03;
+      box-shadow: inset 0 0 25px rgba(0,0,0,0.7), 0 10px 25px rgba(0,0,0,0.6);
+    }
+
+    /* Checkerboard for transparent image preview */
+    .checkerboard {
+      background-color: #1e1b4b;
+      background-image: linear-gradient(45deg, #111827 25%, transparent 25%), 
+                        linear-gradient(-45deg, #111827 25%, transparent 25%), 
+                        linear-gradient(45deg, transparent 75%, #111827 75%), 
+                        linear-gradient(-45deg, transparent 75%, #111827 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+    }
+  </style>
+</head>
+<body class="relative w-full h-full select-none bg-stone-950 overflow-hidden">
+
+  <!-- DYNAMIC BACKGROUND LAYER -->
+  <div id="gameBgLayer" class="absolute inset-0 z-0 bg-cover bg-center transition-all duration-700" 
+       style="background-image: radial-gradient(circle at center, #2e1065 0%, #09090b 100%);">
+  </div>
+  <div id="gameBgOverlay" class="absolute inset-0 z-0 opacity-25 bg-[radial-gradient(#ffffff_1.5px,transparent_1.5px)] [background-size:24px_24px] pointer-events-none"></div>
+
+  <!-- TOP UTILITY BAR -->
+  <header class="absolute top-2.5 right-3 z-50 flex items-center gap-2">
+    <button id="btnSoundToggle" class="px-3 py-1 bg-black/60 hover:bg-black/85 text-amber-300 rounded-full border border-amber-400/40 text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-lg active:scale-95 transition">
+      <span id="soundIcon">🔊</span> <span id="soundLabel" class="hidden sm:inline">sound on</span>
+    </button>
+    <button id="btnOpenDashboard" class="px-3.5 py-1.5 bg-gradient-to-r from-red-600 via-amber-600 to-yellow-600 hover:brightness-110 text-white rounded-full font-bold text-xs sm:text-sm shadow-xl flex items-center gap-1.5 border border-amber-300/40 active:scale-95 transition">
+      <span>⚙️</span> <span class="hidden sm:inline">teacher dashboard</span>
+    </button>
+  </header>
+
+  <!-- SCREEN 1: TITLE SCREEN (Retains default title styling) -->
+  <div id="screenTitle" class="absolute inset-0 z-40 flex flex-col items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+    <div class="max-w-2xl w-full text-center flex flex-col items-center">
+      
+      <div class="relative inline-block mb-2 px-8 py-2 blade-sheen">
+        <h2 class="text-xl sm:text-2xl text-amber-300 tracking-widest drop-shadow-md">
+          ⚔️ solo ninja battle ⚔️
+        </h2>
+        <h1 class="text-5xl sm:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 via-orange-400 to-red-600 drop-shadow-[0_12px_28px_rgba(239,68,68,0.7)] transform -rotate-1">
+          fruit ninja spell!
+        </h1>
+        <div class="h-1.5 w-full bg-gradient-to-r from-transparent via-amber-400 to-transparent mt-2"></div>
+      </div>
+
+      <div class="flex gap-3 sm:gap-4 justify-center text-4xl sm:text-5xl mb-5 animate-bounce">
+        <span>🍎</span><span>🍍</span><span>🥭</span><span>🍌</span><span>🍊</span><span>🍇</span><span>🍈</span>
+      </div>
+
+      <div class="w-full max-w-lg bg-stone-900/90 border-2 border-amber-400/50 rounded-2xl p-4 shadow-2xl backdrop-blur-md mb-5 text-stone-200">
+        <p class="text-sm text-stone-300 text-center">
+          20 rounds of ninja challenges • 90 seconds each • earn points!
+        </p>
+      </div>
+
+      <button id="btnStartGame" class="px-10 py-3.5 rounded-full text-2xl sm:text-3xl font-bold text-amber-950 bg-gradient-to-b from-yellow-300 via-amber-400 to-orange-500 hover:from-yellow-200 hover:to-orange-400 shadow-[0_0_35px_rgba(245,158,11,0.7)] transition transform hover:scale-105 active:scale-95 border-4 border-yellow-200">
+        <span class="flex items-center gap-3">
+          🗡️ start game 🍉
+        </span>
+      </button>
+
+      <p class="text-xs text-stone-300 mt-4 max-w-md text-center">
+        rounds 1-7: spell fruit | rounds 8-15: counting tray challenge | rounds 16-20: listen & spell!
+      </p>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: GROUP NUMBER SELECTOR SCREEN (1-6) -->
+  <div id="screenGroupSelect" class="hidden absolute inset-0 z-40 flex flex-col items-center justify-center p-4 bg-stone-950/90 backdrop-blur-md">
+    <div class="max-w-2xl w-full flex flex-col items-center text-center">
+      
+      <div id="groupHeader" class="text-amber-400 text-3xl sm:text-4xl font-bold mb-2 tracking-wider drop-shadow-lg">
+        ⚔️ round 1 ninja challenge ⚔️
+      </div>
+      <div id="groupSubhead" class="text-stone-300 text-sm sm:text-base mb-6">
+        select a group number (1 - 6) to play
+      </div>
+
+      <!-- Group Selection Grid 1 to 6 -->
+      <div class="grid grid-cols-3 sm:grid-cols-6 gap-3 sm:gap-4 w-full mb-8">
+        <button class="btn-group-num p-4 bg-gradient-to-b from-amber-600 to-amber-800 hover:from-amber-500 hover:to-amber-700 rounded-2xl border-2 border-amber-300 text-3xl font-black text-white shadow-xl active:scale-95 transition" data-num="1">group 1</button>
+        <button class="btn-group-num p-4 bg-gradient-to-b from-amber-600 to-amber-800 hover:from-amber-500 hover:to-amber-700 rounded-2xl border-2 border-amber-300 text-3xl font-black text-white shadow-xl active:scale-95 transition" data-num="2">group 2</button>
+        <button class="btn-group-num p-4 bg-gradient-to-b from-amber-600 to-amber-800 hover:from-amber-500 hover:to-amber-700 rounded-2xl border-2 border-amber-300 text-3xl font-black text-white shadow-xl active:scale-95 transition" data-num="3">group 3</button>
+        <button class="btn-group-num p-4 bg-gradient-to-b from-amber-600 to-amber-800 hover:from-amber-500 hover:to-amber-700 rounded-2xl border-2 border-amber-300 text-3xl font-black text-white shadow-xl active:scale-95 transition" data-num="4">group 4</button>
+        <button class="btn-group-num p-4 bg-gradient-to-b from-amber-600 to-amber-800 hover:from-amber-500 hover:to-amber-700 rounded-2xl border-2 border-amber-300 text-3xl font-black text-white shadow-xl active:scale-95 transition" data-num="5">group 5</button>
+        <button class="btn-group-num p-4 bg-gradient-to-b from-amber-600 to-amber-800 hover:from-amber-500 hover:to-amber-700 rounded-2xl border-2 border-amber-300 text-3xl font-black text-white shadow-xl active:scale-95 transition" data-num="6">group 6</button>
+      </div>
+
+      <!-- Action Button -->
+      <button id="btnStartRound" disabled class="px-8 py-3 bg-gradient-to-r from-amber-500 via-orange-500 to-red-600 hover:brightness-110 text-white text-2xl font-bold rounded-2xl shadow-2xl border-2 border-amber-300/60 active:scale-95 transition opacity-50 cursor-not-allowed flex items-center gap-2">
+        <span>⚡</span> <span id="lblStartRoundBtn">select a group</span> <span>⚡</span>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- SCREEN 3: 10-SECOND QUESTION PREVIEW & FRUIT TRAY SCREEN (Comic Sans) -->
+  <div id="screenRoundIntro" class="comic-sans-font hidden absolute inset-0 z-40 flex flex-col items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+    <div class="text-center flex flex-col items-center max-w-2xl w-full">
+      
+      <div id="roundIntroBanner" class="text-4xl sm:text-6xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 via-orange-500 to-red-600 drop-shadow-[0_12px_24px_rgba(239,68,68,0.85)] mb-1">
+        round 1
+      </div>
+      
+      <!-- Question Prompt -->
+      <div id="roundQuestionPrompt" class="text-2xl sm:text-3xl font-bold text-yellow-300 tracking-wider mb-3 drop-shadow-md">
+        spell 'apple'
+      </div>
+
+      <!-- DISPLAY CONTAINER: EITHER SINGLE FRUIT OR WOODEN TRAY OF FRUITS -->
+      <div id="previewDisplayContainer" class="w-full flex flex-col items-center">
+        <!-- Injected via JS -->
+      </div>
+
+      <!-- 10-SECOND COUNTDOWN -->
+      <div class="mt-4 flex items-center gap-3 bg-black/60 px-6 py-2 rounded-full border border-amber-400/40 shadow-lg">
+        <span class="text-stone-300 text-sm sm:text-base">ninja fight starts in:</span>
+        <span id="previewCountdownNumber" class="text-4xl sm:text-5xl font-bold text-amber-400 animate-pulse">10</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SCREEN 4: MAIN SOLO GAMEPLAY (Comic Sans for Fruit Slicing Game) -->
+  <div id="screenGame" class="comic-sans-font hidden absolute inset-0 z-30 flex flex-col">
+    
+    <!-- CENTRAL TOP 90-SECOND COUNTDOWN CLOCK -->
+    <div class="absolute top-2 left-1/2 transform -translate-x-1/2 z-40 flex items-center gap-3">
+      <button id="btnPauseGame" class="hidden sm:block bg-blue-600 hover:bg-blue-500 border-2 border-blue-400/50 text-white font-bold rounded-xl px-4 py-1 shadow-lg text-sm sm:text-base transition active:scale-95 pointer-events-auto">pause</button>
+      
+      <div class="bg-black/80 backdrop-blur-md border-2 border-amber-400 rounded-full px-4 py-1 flex items-center gap-2 shadow-2xl pointer-events-auto">
+        <span class="text-xs text-amber-400">timer:</span>
+        <span id="gameTimerDisplay" class="text-2xl sm:text-3xl text-yellow-300 font-bold tracking-widest">90s</span>
+      </div>
+
+      <button id="btnEndGame" class="hidden sm:block bg-red-600 hover:bg-red-500 border-2 border-red-400/50 text-white font-bold rounded-xl px-4 py-1 shadow-lg text-sm sm:text-base transition active:scale-95 pointer-events-auto">end</button>
+    </div>
+
+    <!-- MOBILE CONTROLS ROW -->
+    <div class="absolute bottom-2 left-1/2 transform -translate-x-1/2 z-40 flex items-center gap-4 sm:hidden pointer-events-auto">
+      <button id="btnPauseGameMob" class="bg-blue-600 hover:bg-blue-500 border-2 border-blue-400/50 text-white font-bold rounded-xl px-4 py-2 shadow-lg text-sm transition active:scale-95">pause</button>
+      <button id="btnEndGameMob" class="bg-red-600 hover:bg-red-500 border-2 border-red-400/50 text-white font-bold rounded-xl px-4 py-2 shadow-lg text-sm transition active:scale-95">end</button>
+    </div>
+
+    <div id="pauseOverlay" class="hidden absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm pointer-events-none">
+       <div class="text-5xl sm:text-7xl font-bold text-yellow-300 drop-shadow-[0_0_20px_rgba(234,179,8,0.8)] animate-pulse">paused</div>
+    </div>
+
+    <div class="relative w-full h-full flex flex-row overflow-hidden">
+
+      <!-- FULL SCREEN CONTAINER: SOLO PLAYER -->
+      <div id="p1Container" class="relative flex-1 h-full overflow-hidden">
+        
+        <!-- HUD Header -->
+        <div class="absolute top-2 left-2 right-2 z-20 flex flex-col gap-1.5 pointer-events-none">
+          <div class="flex items-center justify-between bg-black/65 backdrop-blur-md rounded-2xl px-4 py-1.5 border border-rose-500/50 shadow-lg">
+            <div class="flex items-center gap-2 truncate">
+              <span class="text-lg">🦫</span>
+              <span id="hudP1Name" class="text-rose-300 text-sm sm:text-base font-bold truncate max-w-[150px]">group 1</span>
+            </div>
+            <!-- 3 Hearts -->
+            <div id="hudP1Lives" class="flex gap-1 text-lg">
+              <span>❤️</span><span>❤️</span><span>❤️</span>
+            </div>
+            <!-- Total Score Display -->
+            <div class="text-amber-300 text-sm sm:text-base font-bold">
+              total score: <span id="hudP1MatchScore">0</span>
+            </div>
+          </div>
+
+          <!-- Challenge Target Status: Spelling slots OR Counting Progress -->
+          <div class="flex items-center justify-center gap-2 bg-black/55 backdrop-blur-md py-1 px-3 rounded-2xl border border-white/10 shadow-md">
+            <span id="hudP1GoalLabel" class="text-xs text-amber-400 font-bold">spell:</span>
+            <div id="hudP1Slots" class="flex gap-1 flex-wrap justify-center items-center">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Canvas for Solo Player -->
+        <canvas id="canvasP1" class="absolute inset-0 w-full h-full"></canvas>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SCREEN 5: ROUND RESULT / SCORE DISPLAY MODAL -->
+  <div id="screenWinner" class="hidden absolute inset-0 z-50 flex flex-col items-center justify-center p-4 bg-black/85 backdrop-blur-lg">
+    <div class="max-w-md w-full bg-stone-900 border-4 border-amber-400 rounded-3xl p-6 text-center shadow-[0_0_60px_rgba(245,158,11,0.6)]">
+      <div class="text-5xl mb-2 animate-bounce">🏆</div>
+      <h2 id="winnerTitle" class="text-3xl sm:text-4xl font-bold text-yellow-300 tracking-wider mb-1">round complete!</h2>
+      <p id="winnerMessage" class="text-base text-rose-300 mb-4">great job!</p>
+
+      <div class="bg-black/55 rounded-2xl p-4 mb-5 border border-white/10 flex flex-col items-center justify-center gap-1">
+        <div id="winP1Name" class="text-sm font-bold text-amber-400 truncate">group 1</div>
+        <div class="text-xs text-stone-400">your score for this round:</div>
+        <div id="winRoundPoints" class="text-4xl font-black text-green-400 mb-1">+1 pt</div>
+        <div class="text-xs text-stone-400">total overall score:</div>
+        <div id="winP1Score" class="text-3xl font-bold text-white">0</div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <button id="btnNextMatchRandomizer" class="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-red-600 hover:brightness-110 font-bold text-xl text-white rounded-xl shadow-lg active:scale-95 transition flex items-center justify-center gap-2">
+          <span>➡️</span> next round 
+        </button>
+        <button id="btnBackToMenu" class="px-4 py-2.5 bg-stone-800 hover:bg-stone-700 font-bold text-lg text-stone-300 rounded-xl shadow-lg active:scale-95 transition">
+          menu 🏠
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 6: TEACHER CONTROL DASHBOARD (Retains image upload functionality) -->
+  <div id="modalDashboard" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/85 backdrop-blur-md overflow-y-auto">
+    <div class="bg-stone-900 border-2 border-amber-400 rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden text-stone-200">
+      
+      <div class="p-4 bg-gradient-to-r from-red-950 via-stone-900 to-amber-950 border-b border-amber-500/30 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">⚙️</span>
+          <h2 class="text-2xl font-bold tracking-wider text-amber-300">teacher control dashboard</h2>
+        </div>
+        <button id="btnCloseDashboard" class="text-stone-400 hover:text-white text-3xl font-bold px-2 py-0">&times;</button>
+      </div>
+
+      <div class="p-5 overflow-y-auto space-y-6 flex-1 text-sm">
+        
+        <!-- Section 1: Questions & Rounds List -->
+        <section class="bg-stone-950/80 border border-white/10 rounded-xl p-4">
+          <h3 class="text-lg font-bold text-amber-400 mb-2 flex items-center gap-2">
+            <span>📜</span> 20 game rounds overview (spelling, counting, listening)
+          </h3>
+          <p class="text-xs text-stone-400 mb-3">
+            rounds 1-7: spelling. rounds 8-15: counting trays. rounds 16-20: listen & spell challenges.
+          </p>
+          <div id="dashboardRoundsList" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs max-h-48 overflow-y-auto pr-1">
+            <!-- Populated via script -->
+          </div>
+        </section>
+
+        <!-- Section 2: Arena Background Theme -->
+        <section class="bg-stone-950/80 border border-white/10 rounded-xl p-4">
+          <h3 class="text-lg font-bold text-amber-400 mb-3 flex items-center gap-2">
+            <span>🖼️</span> arena background theme
+          </h3>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <button class="bg-preset-btn p-2 rounded-xl border-2 border-transparent hover:border-amber-400 bg-stone-800 text-xs font-bold text-center transition" data-bg="gradient-purple">
+              <div class="h-12 rounded-lg bg-gradient-to-b from-indigo-950 to-stone-950 mb-1"></div>
+              midnight dojo
+            </button>
+            <button class="bg-preset-btn p-2 rounded-xl border-2 border-transparent hover:border-amber-400 bg-stone-800 text-xs font-bold text-center transition" data-bg="gradient-bamboo">
+              <div class="h-12 rounded-lg bg-gradient-to-b from-emerald-950 to-stone-950 mb-1"></div>
+              bamboo garden
+            </button>
+            <button class="bg-preset-btn p-2 rounded-xl border-2 border-transparent hover:border-amber-400 bg-stone-800 text-xs font-bold text-center transition" data-bg="gradient-sunset">
+              <div class="h-12 rounded-lg bg-gradient-to-b from-orange-950 to-stone-950 mb-1"></div>
+              sunset orchard
+            </button>
+            <button class="bg-preset-btn p-2 rounded-xl border-2 border-transparent hover:border-amber-400 bg-stone-800 text-xs font-bold text-center transition" data-bg="gradient-dojowood">
+              <div class="h-12 rounded-lg bg-gradient-to-b from-amber-950 to-stone-950 mb-1"></div>
+              wood floor
+            </button>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input id="customBgUrlInput" type="text" placeholder="Or paste background image URL..." 
+                   class="flex-1 bg-stone-900 border border-white/20 rounded-xl px-3 py-2 text-stone-200 text-xs focus:ring-1 focus:ring-amber-400 outline-none" />
+            <button id="btnApplyBgUrl" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 rounded-xl font-bold text-white text-xs">apply url</button>
+            <label class="px-4 py-2 bg-stone-800 hover:bg-stone-700 rounded-xl font-bold text-stone-300 text-xs cursor-pointer text-center">
+              upload file
+              <input id="bgFileInput" type="file" accept="image/*" class="hidden">
+            </label>
+          </div>
+        </section>
+
+        <!-- Section 3: Fruits & Transparent Pictures Manager -->
+        <section class="bg-stone-950/80 border border-white/10 rounded-xl p-4">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-lg font-bold text-amber-400 flex items-center gap-2">
+              <span>🍍</span> fruit pictures (transparent background) & custom upload
+            </h3>
+            <button id="btnResetFruitWords" class="text-xs text-rose-400 hover:underline">reset default pictures</button>
+          </div>
+          <p class="text-xs text-stone-400 mb-3">
+            upload transparent PNG images or paste transparent image URLs for each fruit. Transparent backgrounds ensure pure juicy slice action!
+          </p>
+
+          <div id="wordListGrid" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto pr-1">
+            <!-- Populated via script -->
+          </div>
+        </section>
+
+        <!-- Section 4: Tray Customization -->
+        <section class="bg-stone-950/80 border border-white/10 rounded-xl p-4 mt-4">
+          <h3 class="text-lg font-bold text-amber-400 mb-2 flex items-center gap-2">
+            <span>🧺</span> custom fruit tray / basket image
+          </h3>
+          <p class="text-xs text-stone-400 mb-3">
+            paste an image url to override the default wooden tray background in counting rounds.
+          </p>
+          <input id="customTrayUrlInput" type="text" placeholder="paste tray image url..." class="w-full bg-stone-900 border border-white/20 rounded-xl px-3 py-2 text-stone-200 text-xs focus:ring-1 focus:ring-amber-400 outline-none" />
+        </section>
+
+        <!-- Section 5: Announcer & Volumes -->
+        <section class="bg-stone-950/80 border border-white/10 rounded-xl p-4">
+          <h3 class="text-lg font-bold text-amber-400 mb-3 flex items-center gap-2">
+            <span>🎙️️</span> wrestling announcer & audio controls
+          </h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
+            <div>
+              <label class="block text-xs font-bold text-stone-300 mb-1">bubbly fruit music volume</label>
+              <input id="sliderMusicVol" type="range" min="0" max="1" step="0.05" value="0.35" class="w-full accent-amber-400">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-300 mb-1">juicy slice & bomb volume</label>
+              <input id="sliderSfxVol" type="range" min="0" max="1" step="0.05" value="0.75" class="w-full accent-amber-400">
+            </div>
+          </div>
+          <button id="btnTestVoice" class="px-4 py-2 bg-stone-800 hover:bg-stone-700 border border-amber-400/40 rounded-xl text-amber-300 text-xs font-bold flex items-center gap-2">
+            <span>📢</span> test announcer voice ("round 1! spell apple! fight!")
+          </button>
+        </section>
+
+      </div>
+
+      <div class="p-3 bg-stone-950 border-t border-amber-500/30 flex justify-end gap-3">
+        <button id="btnSaveDashboard" class="px-6 py-2 bg-gradient-to-r from-amber-500 to-red-600 hover:brightness-110 text-white font-bold text-lg rounded-xl shadow-lg">
+          save all settings
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * THE 20 GAME ROUND QUESTIONS
+     */
+    const ROUND_QUESTIONS = [
+      { round: 1, type: 'spell', word: 'apple', prompt: "spell 'apple'", fruitKey: 'apple' },
+      { round: 2, type: 'spell', word: 'pineapple', prompt: "spell 'pineapple'", fruitKey: 'pineapple' },
+      { round: 3, type: 'spell', word: 'papayas', prompt: "spell 'papayas'", fruitKey: 'papayas' },
+      { round: 4, type: 'spell', word: 'bananas', prompt: "spell 'bananas'", fruitKey: 'bananas' },
+      { round: 5, type: 'spell', word: 'orange', prompt: "spell 'orange'", fruitKey: 'orange' },
+      { round: 6, type: 'spell', word: 'grapes', prompt: "spell 'grapes'", fruitKey: 'grapes' },
+      { round: 7, type: 'spell', word: 'guavas', prompt: "spell 'guavas'", fruitKey: 'guavas' },
+      { round: 8, type: 'count', count: 6, prompt: "how many bananas does she need?", voiceover: "How many bananas does she need? She needs 6 bananas.", fruitKey: 'bananas', fruitName: 'bananas' },
+      { round: 9, type: 'count', count: 4, prompt: "how many pineapples do you need?", voiceover: "How many pineapples do you need? I need four pineapples.", fruitKey: 'pineapple', fruitName: 'pineapples' },
+      { round: 10, type: 'count', count: 10, prompt: "how many guavas does he need?", voiceover: "How many guavas does he need? He needs 10 guavas.", fruitKey: 'guavas', fruitName: 'guavas' },
+      { round: 11, type: 'count', count: 12, prompt: "how many apples do you need?", voiceover: "How many apples do you need? We need 12 apples.", fruitKey: 'apple', fruitName: 'apples' },
+      { round: 12, type: 'count', count: 5, prompt: "how many oranges do you need?", voiceover: "How many oranges do you need? They need 5 oranges.", fruitKey: 'orange', fruitName: 'oranges' },
+      { round: 13, type: 'count', count: 10, prompt: "how many grapes do you need?", voiceover: "How many grapes do you need? I need 10 grapes.", fruitKey: 'grapes', fruitName: 'grapes' },
+      { round: 14, type: 'count', count: 3, prompt: "how many papayas does amy need?", voiceover: "How many papayas does Amy need? Amy needs 3 papayas.", fruitKey: 'papayas', fruitName: 'papayas' },
+      { round: 15, type: 'count', count: 1, prompt: "how many pineapples does mom need?", voiceover: "How many pineapples does Mom need? Mom needs 1 pineapple.", fruitKey: 'pineapple', fruitName: 'pineapples' },
+      { round: 16, type: 'listen_spell', word: 'pineapple', prompt: "listen and spell", voiceover: "Listen carefully. Spell... pineapple.", fruitKey: 'pineapple' },
+      { round: 17, type: 'listen_spell', word: 'grapes', prompt: "listen and spell", voiceover: "Listen carefully. Spell... grapes.", fruitKey: 'grapes' },
+      { round: 18, type: 'listen_spell', word: 'oranges', prompt: "listen and spell", voiceover: "Listen carefully. Spell... oranges.", fruitKey: 'orange' },
+      { round: 19, type: 'listen_spell', word: 'guavas', prompt: "listen and spell", voiceover: "Listen carefully. Spell... guavas.", fruitKey: 'guavas' },
+      { round: 20, type: 'listen_spell', word: 'apples', prompt: "listen and spell", voiceover: "Listen carefully. Spell... apples.", fruitKey: 'apple' }
+    ];
+
+    /**
+     * FRUIT ASSET DEFINITIONS
+     */
+    const DEFAULT_FRUIT_MODELS = {
+      apple: { id: 'apple', name: 'apple', emoji: '🍎', color: '#ef4444', innerColor: '#fef08a', imgUrl: 'https://cdn-uploads.space.co/374d6c44-59e5-4f40-8f92-563b7150036d.png' },
+      pineapple: { id: 'pineapple', name: 'pineapple', emoji: '🍍', color: '#eab308', innerColor: '#fef08a', imgUrl: '' },
+      papayas: { id: 'papayas', name: 'papayas', emoji: '🥭', color: '#ea580c', innerColor: '#fed7aa', imgUrl: '' },
+      bananas: { id: 'bananas', name: 'bananas', emoji: '🍌', color: '#eab308', innerColor: '#fef9c3', imgUrl: '' },
+      orange: { id: 'orange', name: 'orange', emoji: '🍊', color: '#f97316', innerColor: '#fed7aa', imgUrl: '' },
+      grapes: { id: 'grapes', name: 'grapes', emoji: '🍇', color: '#8b5cf6', innerColor: '#ede9fe', imgUrl: '' },
+      guavas: { id: 'guavas', name: 'guavas', emoji: '🍈', color: '#84cc16', innerColor: '#fda4af', imgUrl: '' }
+    };
+
+    let fruitAssets = JSON.parse(localStorage.getItem('ninja_spell_assets')) || DEFAULT_FRUIT_MODELS;
+    fruitAssets.apple.imgUrl = 'https://cdn-uploads.space.co/374d6c44-59e5-4f40-8f92-563b7150036d.png';
+
+    const fruitImageCache = new Map();
+
+    function preloadFruitImages() {
+      Object.values(fruitAssets).forEach(fruit => {
+        if (fruit.imgUrl && !fruitImageCache.has(fruit.imgUrl)) {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.src = fruit.imgUrl;
+          fruitImageCache.set(fruit.imgUrl, img);
+        }
+      });
+    }
+
+    /**
+     * TRANSPARENT SVG / IMAGE RENDERER
+     */
+    function getFruitGraphicHtml(fruitKey, size = 110) {
+      const f = fruitAssets[fruitKey] || DEFAULT_FRUIT_MODELS.apple;
+      if (f.imgUrl && f.imgUrl.trim() !== '') {
+        return `<img src="${f.imgUrl}" alt="${f.name}" style="width:${size}px; height:${size}px;" class="object-contain filter drop-shadow-[0_10px_16px_rgba(0,0,0,0.6)]" onerror="this.src='https://placehold.co/${size}x${size}/ea580c/ffffff?text=${f.name}'"/>`;
+      }
+      switch (fruitKey) {
+        case 'apple':
+          return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" class="drop-shadow-xl">
+            <path d="M50 16 C48 8 52 4 56 2 C58 8 54 13 50 16 Z" fill="#15803d"/>
+            <path d="M50 18 Q50 8 58 6" stroke="#78350f" stroke-width="4" fill="none" stroke-linecap="round"/>
+            <path d="M50 24 C38 12 12 18 14 48 C16 76 38 88 50 88 C62 88 84 76 86 48 C88 18 62 12 50 24 Z" fill="url(#apGrad)"/>
+            <circle cx="34" cy="38" r="7" fill="#ffffff" opacity="0.4"/>
+            <defs>
+              <radialGradient id="apGrad" cx="35%" cy="35%">
+                <stop offset="0%" stop-color="#ff6b6b"/>
+                <stop offset="70%" stop-color="#dc2626"/>
+                <stop offset="100%" stop-color="#991b1b"/>
+              </radialGradient>
+            </defs>
+          </svg>`;
+        case 'orange':
+          return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" class="drop-shadow-xl">
+            <circle cx="50" cy="52" r="38" fill="url(#orGrad)"/>
+            <circle cx="50" cy="52" r="30" fill="#fed7aa" opacity="0.35"/>
+            <circle cx="38" cy="38" r="6" fill="#ffffff" opacity="0.45"/>
+            <path d="M50 14 C52 10 56 12 58 14 C54 16 52 18 50 14 Z" fill="#16a34a"/>
+            <defs>
+              <radialGradient id="orGrad" cx="35%" cy="35%">
+                <stop offset="0%" stop-color="#fb923c"/>
+                <stop offset="80%" stop-color="#ea580c"/>
+                <stop offset="100%" stop-color="#c2410c"/>
+              </radialGradient>
+            </defs>
+          </svg>`;
+        case 'bananas':
+          return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" class="drop-shadow-xl">
+            <path d="M18 76 C28 86 75 75 85 28 C80 32 55 60 18 76 Z" fill="#facc15"/>
+            <path d="M18 76 C35 78 70 58 83 25 C84 27 82 30 78 35 C52 66 26 77 18 76 Z" fill="#eab308"/>
+            <path d="M85 28 L89 22 L83 24 Z" fill="#65a30d"/>
+            <path d="M17 75 L12 79 L15 81 Z" fill="#78350f"/>
+          </svg>`;
+        case 'grapes':
+          return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" class="drop-shadow-xl">
+            <path d="M50 10 Q50 25 50 28" stroke="#78350f" stroke-width="4" fill="none"/>
+            <g fill="url(#grpGrad)">
+              <circle cx="42" cy="34" r="11"/><circle cx="58" cy="34" r="11"/>
+              <circle cx="34" cy="48" r="11"/><circle cx="50" cy="48" r="11"/><circle cx="66" cy="48" r="11"/>
+              <circle cx="42" cy="62" r="11"/><circle cx="58" cy="62" r="11"/>
+              <circle cx="50" cy="74" r="9"/>
+            </g>
+            <defs>
+              <radialGradient id="grpGrad" cx="30%" cy="30%">
+                <stop offset="0%" stop-color="#c084fc"/>
+                <stop offset="80%" stop-color="#7e22ce"/>
+                <stop offset="100%" stop-color="#581c87"/>
+              </radialGradient>
+            </defs>
+          </svg>`;
+        case 'guavas':
+          return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" class="drop-shadow-xl">
+            <circle cx="50" cy="52" r="38" fill="#65a30d"/>
+            <circle cx="50" cy="52" r="28" fill="#fb7185"/>
+            <circle cx="44" cy="48" r="2.5" fill="#881337"/><circle cx="54" cy="48" r="2.5" fill="#881337"/>
+            <circle cx="50" cy="58" r="2.5" fill="#881337"/><circle cx="44" cy="58" r="2.5" fill="#881337"/>
+          </svg>`;
+        case 'papayas':
+          return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" class="drop-shadow-xl">
+            <ellipse cx="50" cy="52" rx="32" ry="42" fill="#f97316"/>
+            <ellipse cx="50" cy="52" rx="20" ry="28" fill="#fed7aa"/>
+            <circle cx="48" cy="48" r="2.5" fill="#1c1917"/><circle cx="52" cy="54" r="2.5" fill="#1c1917"/>
+            <circle cx="47" cy="58" r="2.5" fill="#1c1917"/>
+          </svg>`;
+        case 'pineapple':
+        default:
+          return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" class="drop-shadow-xl">
+            <ellipse cx="50" cy="60" rx="28" ry="32" fill="#ca8a04"/>
+            <path d="M50 30 L40 10 L50 20 L60 10 Z" fill="#16a34a"/>
+          </svg>`;
+      }
+    }
+
+    preloadFruitImages();
+  </script>
+</body>
+</html>
